@@ -3,6 +3,7 @@ const app = express()
 
 var Sequelize = require('sequelize')
 var sequelize = new Sequelize('postgres://postgres:secret@localhost:5432/postgres')
+const Op = Sequelize.Op;
 
 const MyEvent = sequelize.define('myEvent', {
   title: {
@@ -32,4 +33,32 @@ app.use(function(req, res, next) {
   next()
 })
 
-MyEvent.findById(1).then(myEvent => console.log(JSON.stringify(myEvent)))
+app.get('/events', (req, res) => {
+  MyEvent.findAll({
+    attributes: ['title', 'start_date', 'end_date'],
+    where:{start_date: {[Op.gt]: Date.now()}}
+    })
+    .then(result => {
+      res.json(result)
+    })
+    .catch(err => {
+      res.status(500)
+      res.json({message: 'Something went wrong'})
+    })
+})
+
+app.get('/events/:id', (req, res) => {
+  MyEvent.findById(req.params.id)
+    .then(result => {
+      if (result) {
+        res.json(result)
+      } else {
+        res.status(404)
+        res.json({ message: 'Not Found' })
+      }
+    })
+    .catch(err => {
+      res.status(500)
+      res.json({ message: 'There was an error' })
+    })
+})
