@@ -1,5 +1,7 @@
 const express = require('express')
+const bodyParser = require('body-parser')
 const app = express()
+app.use(bodyParser.json())
 
 var Sequelize = require('sequelize')
 var sequelize = new Sequelize('postgres://postgres:secret@localhost:5432/postgres')
@@ -50,6 +52,7 @@ app.get('/events', (req, res) => {
 app.get('/events/:id', (req, res) => {
   MyEvent.findById(req.params.id)
     .then(result => {
+//      console.log(new Date().toISOString().slice(0,10));
       if (result) {
         res.json(result)
       } else {
@@ -61,4 +64,28 @@ app.get('/events/:id', (req, res) => {
       res.status(500)
       res.json({ message: 'There was an error' })
     })
+})
+
+app.post('/events', (req, res) => {
+  const myEvent = req.body
+  //console.log(Date.now())
+  if (myEvent.end_date<myEvent.start_date){
+    res.status(500)
+    res.json({ message: "Problem, ending date cannot happen before the starting date!!"})
+  }
+  else if (myEvent.start_date< new Date().toISOString().slice(0,10)) {
+    res.status(501)
+    res.json({ message: "Cannot go back in time!!"})
+  }
+  else {
+    MyEvent.create(myEvent)
+      .then(entity => {
+        res.status(201)
+        res.json(entity)
+      })
+      .catch(err => {
+        res.status(422)
+        res.json({ message: err.message })
+      })
+  }
 })
